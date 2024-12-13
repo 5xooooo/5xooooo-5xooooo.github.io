@@ -1,4 +1,4 @@
-let mapLeft = 200, mapTop = 0;
+let mapLeft = 100, mapTop = 0;
 let mapMargin = {top: 10, right: 30, bottom: 30, left: 100},
     mapWidth = 1000 - mapMargin.left - mapMargin.right,
     mapHeight = 800 - mapMargin.top - mapMargin.bottom;
@@ -49,26 +49,41 @@ radarSvg.append('rect')
 d3.json("taiwan.json").then(drawTaiwan);
 
 function drawTaiwan(taiwan) {
-    var projection = d3.geoMercator()
-        .fitExtent([[0, 0], [mapWidth + mapMargin.left + mapMargin.right, mapHeight + mapMargin.top + mapMargin.bottom]], taiwan);
+    var projection = d3.geoMercator().scale(10000)
+        .center([120.5,23.7])
+        .translate([mapWidth / 2, mapHeight / 2]);
 
     var geoGenerator = d3.geoPath()
         .projection(projection);
 
-    var paths = mapSvg.selectAll('path')
+    var selectedCounty = null;
+
+    var county = mapSvg.selectAll('path')
         .data(taiwan.features)
         .enter()
         .append('path')
         .attr('stroke', "white")
-        .attr('fill', 'steelblue')
-        .attr('d', geoGenerator);
-
-    paths.on('click', function(event, d) {
-        mapSvg.selectAll('path')
-            .attr('fill', 'steelblue');
-        d3.select(this)
-            .attr('fill', 'red');
-    });
+        .attr('d', geoGenerator)
+        .attr('class', 'county')
+        .on('mouseover', function () {
+            if(selectedCounty == this) return;
+            d3.select(this).classed('hovered', true);
+        })
+        .on('mouseout', function () {
+            d3.select(this).classed('hovered', false);
+        })
+        .on('click', function () {
+            if(selectedCounty == this) {
+                d3.select(selectedCounty).classed('selected', false);
+                d3.select(this).classed('hovered', true);
+                selectedCounty = null;
+                return;
+            }
+            d3.select(selectedCounty).classed('selected', false);
+            selectedCounty = this;
+            d3.select(this).classed('hovered', false).classed('selected', true);
+        });
+    
     // var texts = mapSvg.selectAll('text')
     //     .data(taiwan.features)
     //     .enter()
