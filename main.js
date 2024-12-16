@@ -1,20 +1,20 @@
 let mapLeft = 100, mapTop = 0;
-let mapMargin = {top: 10, right: 30, bottom: 30, left: 100},
+let mapMargin = {top: 30, right: 30, bottom: 30, left: 100},
     mapWidth = 1000 - mapMargin.left - mapMargin.right,
     mapHeight = 800 - mapMargin.top - mapMargin.bottom;
 
 let barLeft = 1050, barTop = 0;
-let barMargin = {top: 10, right: 30, bottom: 30, left: 60},
+let barMargin = {top: 30, right: 30, bottom: 30, left: 30},
     barWidth = 600 - barMargin.left - barMargin.right,
     barHeight = 400 - barMargin.top - barMargin.bottom;
 
 let radarLeft = 1050, radarTop = 400;
-let radarMargin = {top: 10, right: 30, bottom: 30, left: 60},
+let radarMargin = {top: 30, right: 30, bottom: 30, left: 30},
     radarWidth = 600 - radarMargin.left - radarMargin.right,
     radarHeight = 400 - radarMargin.top - radarMargin.bottom;
 
 let timeLeft = 300, timeTop = 760;
-let timeMargin = {top: 10, right: 30, bottom: 30, left: 60},
+let timeMargin = {top: 30, right: 30, bottom: 30, left: 30},
     timeWidth = 600 - timeMargin.left - timeMargin.right,
     timeHeight = 100 - timeMargin.top - timeMargin.bottom;
 
@@ -57,15 +57,26 @@ radarSvg.append('rect')
     .attr('fill', 'none');
 
 var testData = [
-    { county: "臺北市", month: "1", rainfall: 120 },
-    { county: "臺北市", month: "2", rainfall: 80 },
-    { county: "新北市", month: "1", rainfall: 10 },
-    { county: "新北市", month: "2", rainfall: 280 },
-    { county: "臺南市", month: "1", rainfall: 200 },
-    { county: "臺南市", month: "2", rainfall: 150 },
-    { county: "臺中市", month: "1", rainfall: 320 },
-    { county: "臺中市", month: "2", rainfall: 50 },
+    { county: '臺北市', month: '1', rainfall: 120 },
+    { county: '臺北市', month: '2', rainfall: 80 },
+    { county: '新北市', month: '1', rainfall: 10 },
+    { county: '新北市', month: '2', rainfall: 280 },
+    { county: '臺南市', month: '1', rainfall: 200 },
+    { county: '臺南市', month: '2', rainfall: 150 },
+    { county: '臺中市', month: '1', rainfall: 320 },
+    { county: '臺中市', month: '2', rainfall: 50 }
 ];
+
+var testData2 = [
+    { county: '臺北市', month: '1', wind_direction: 120 },
+    { county: '臺北市', month: '2', wind_direction: 80 },
+    { county: '新北市', month: '1', wind_direction: 110 },
+    { county: '新北市', month: '2', wind_direction: 70 },
+    { county: '臺南市', month: '1', wind_direction: 100 },
+    { county: '臺南市', month: '2', wind_direction: 50 },
+    { county: '臺中市', month: '1', wind_direction: 90 },
+    { county: '臺中市', month: '2', wind_direction: 50 }
+]
     
 Promise.all([
     d3.json('taiwan.json'),
@@ -87,7 +98,7 @@ Promise.all([
         .data(taiwanData.features)
         .enter()
         .append('path')
-        .attr('stroke', "black")
+        .attr('stroke', 'black')
         .attr('d', geoGenerator)
         .attr('class', 'county')
         .on('mouseover', function () {
@@ -102,11 +113,16 @@ Promise.all([
                 d3.select(selectedCounty).classed('selected', false);
                 d3.select(this).classed('hovered', true);
                 selectedCounty = null;
+                var monthlyData = processWindData(testData2, selectedMonth, selectedCounty);
+                updateRadarChart(monthlyData);
                 return;
             }
             d3.select(selectedCounty).classed('selected', false);
             selectedCounty = this;
             d3.select(this).classed('hovered', false).classed('selected', true);
+
+            var monthlyData = processWindData(testData2, selectedMonth, selectedCounty);
+            updateRadarChart(monthlyData);
         });
     
     //select month
@@ -119,16 +135,16 @@ Promise.all([
     var timeXAxis = d3.axisBottom(timeXScale).tickSize(10);
     timeSvg.call(timeXAxis);
 
-    var dragCircle = timeSvg.append("circle")
-        .attr("cx", timeXScale(selectedMonth))
-        .attr("cy", 0)
-        .attr("r", 10)
-        .attr("fill", "steelblue")
+    var dragCircle = timeSvg.append('circle')
+        .attr('cx', timeXScale(selectedMonth))
+        .attr('cy', 0)
+        .attr('r', 10)
+        .attr('fill', 'steelblue')
         .call(
             d3.drag()
-                .on("drag", function() {
+                .on('drag', function() {
                     var x = Math.max(0, Math.min((d3.mouse(this))[0], timeWidth + timeMargin.left + timeMargin.right));
-                    dragCircle.attr("cx", x);
+                    dragCircle.attr('cx', x);
 
                     var closestMonth = months.reduce((prev, curr) => {
                         return Math.abs(timeXScale(curr) - x) < Math.abs(timeXScale(prev) - x) ? curr : prev;
@@ -136,14 +152,18 @@ Promise.all([
 
                     selectedMonth = closestMonth;
                 })
-                .on("end", function () {
+                .on('end', function () {
                     var targetX = timeXScale(selectedMonth);
-                    dragCircle.attr("cx", targetX);
+                    dragCircle.attr('cx', targetX);
+                    
                     updateMap(selectedMonth);
+                    
+                    var monthlyData = processWindData(testData2, selectedMonth, selectedCounty);
+                    updateRadarChart(monthlyData);
                 })
         );
 
-    //change map color
+    //update taiwan map
     var colorScale = d3.scaleSequential(d3.interpolateBlues)
         .domain([0, d3.max(testData, d => d.rainfall)])
 
@@ -155,7 +175,7 @@ Promise.all([
             rainfallMap[d.county] = d.rainfall;
         });
     
-        county.attr("fill", function (d) {
+        county.attr('fill', function (d) {
             var rainfall = rainfallMap[d.properties.NAME_2014] || 0;
             return colorScale(rainfall);
         });
@@ -163,18 +183,98 @@ Promise.all([
 
     updateMap(selectedMonth);
     
-    // var texts = mapSvg.selectAll('text')
-    //     .data(taiwan.features)
-    //     .enter()
-    //     .append('text')
-    //     .attr('text-anchor', 'middle')
-    //     .attr('alignment-baseline', 'middle')
-    //     .attr('opacity', 0.5)
-    //     .text(function(d) {
-    //         return d.properties.NAME_2014;
-    //     })
-    //     .attr('transform', function(d) {
-    //         var center = geoGenerator.centroid(d);
-    //         return 'translate(' + center + ')';
-    //     });
+    //discretization
+    function processWindData(testData2, selectedMonth, selectedCounty) {
+        var filteredData = testData2.filter(d => d.month == selectedMonth);
+        if(selectedCounty) {
+            countyName = d3.select(selectedCounty).data()[0].properties.NAME_2014;
+            filteredData = filteredData.filter(d => d.county == countyName);
+        }
+
+        var binSize = 15;
+        var bins = d3.range(0, 360, binSize);
+
+        var binCounts = bins.map(bin => ({ angle: bin, frequency: 0 }));
+
+        filteredData.forEach(d => {
+            var angle = d.wind_direction;
+            var binIndex = Math.floor(angle / binSize);
+            (binCounts[binIndex]).frequency += 1;
+        });
+
+        var total = d3.sum(binCounts, d => d.frequency);
+        binCounts.forEach(d => {
+            d.frequency = total > 0 ? d.frequency / total : 0;
+        });
+
+        return binCounts;
+    }
+
+    //draw radar chart
+    var radarRadius = Math.min(radarWidth, radarHeight) / 2;
+    var angleScale = d3.scaleLinear().domain([0, 360]).range([0, 2 * Math.PI]);
+    var radiusScale = d3.scaleLinear().domain([0, 1]).range([0, radarRadius]);
+
+    var gridLevels = d3.range(0.2, 1.2, 0.2);
+    radarSvg.selectAll('.grid')
+        .data(gridLevels)
+        .enter()
+        .append('circle')
+        .attr('class', 'grid')
+        .attr('cx', radarWidth/2 + radarMargin.left)
+        .attr('cy', radarHeight/2 + radarMargin.top)
+        .attr('r', d => radiusScale(d));
+
+    var directions = d3.range(0, 360, 15);
+    radarSvg.selectAll(".axis")
+        .data(directions)
+        .enter()
+        .append("line")
+        .attr("class", "axis")
+        .attr('transform', `translate(${radarWidth/2 + radarMargin.left}, ${radarHeight/2 + radarMargin.top})`)
+        .attr("x1", 0)
+        .attr("y1", 0)
+        .attr("x2", d => radiusScale(1) * Math.cos(angleScale(d) - Math.PI / 2))
+        .attr("y2", d => radiusScale(1) * Math.sin(angleScale(d) - Math.PI / 2))
+        .style("stroke", "#aaa");
+
+    var directions = d3.range(0, 360, 30);
+    radarSvg.selectAll('.radar-label')
+        .data(directions)
+        .enter()
+        .append('text')
+        .attr('transform', `translate(${radarWidth/2 + radarMargin.left}, ${radarHeight/2 + radarMargin.top + 7})`)
+        .attr('class', 'radar-label')
+        .attr('x', d => radiusScale(1.1) * Math.cos(angleScale(d) - Math.PI / 2))
+        .attr('y', d => radiusScale(1.1) * Math.sin(angleScale(d) - Math.PI / 2))
+        .attr('text-anchor', 'middle')
+        .text(d => `${d}°`);
+
+    //update radar chart
+    function updateRadarChart(data) {
+        var areaGenerator = d3.lineRadial()
+            .angle(d => angleScale(d.angle))
+            .radius(d => radiusScale(d.frequency))
+            .curve(d3.curveCardinalClosed);
+    
+        var radarPath = radarSvg.selectAll('.radar-area').data([data]);
+    
+        radarPath.enter()
+            .append('path')
+            .attr('transform', `translate(${radarWidth/2 + radarMargin.left}, ${radarHeight/2 + radarMargin.top})`)
+            .attr('class', 'radar-area')
+            .merge(radarPath)
+            .transition()
+            .duration(500)
+            .attr('d', areaGenerator)
+            .attr('fill', 'steelblue')
+            .attr('fill-opacity', 0.5)
+            .attr('stroke', 'steelblue')
+            .attr('stroke-width', 2);
+    
+        radarPath.exit().remove();
+    }
+    
+    var monthlyData = processWindData(testData2, selectedMonth);
+    updateRadarChart(monthlyData);
 });
