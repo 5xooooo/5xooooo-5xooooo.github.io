@@ -4,7 +4,7 @@ let mapMargin = {top: 30, right: 30, bottom: 30, left: 100},
     mapHeight = 800 - mapMargin.top - mapMargin.bottom;
 
 let barLeft = 1050, barTop = 0;
-let barMargin = {top: 30, right: 30, bottom: 30, left: 30},
+let barMargin = {top: 30, right: 30, bottom: 30, left: 50},
     barWidth = 600 - barMargin.left - barMargin.right,
     barHeight = 400 - barMargin.top - barMargin.bottom;
 
@@ -80,8 +80,9 @@ var testData2 = [
     
 Promise.all([
     d3.json('taiwan.json'),
-    d3.csv('dataset/2023/rainfall.csv')
-]).then(function([taiwanData, rainfallData]) {
+    d3.csv('dataset/2023/rainfall.csv'),
+    d3.json('dataset/city_data.json')
+]).then(function([taiwanData, rainfallData, cityData]) {
     //draw taiwan map
     var projection = d3.geoMercator()
                        .scale(10000)
@@ -277,4 +278,81 @@ Promise.all([
     
     var monthlyData = processWindData(testData2, selectedMonth);
     updateRadarChart(monthlyData);
+
+    // draw bar chart
+    var country_rainfall = [];
+    for (var county in cityData.rainfall) {
+        cityData.rainfall[county].forEach(entry => {
+            var month = entry.month;
+            if (!(month in country_rainfall)) {
+                country_rainfall[month] = 0;
+            }else{
+                country_rainfall[month] += entry.sum;
+            }
+        });
+    }
+    // console.log(country_rainfall);s
+
+    var rainfall_list = [];
+    for (var county in cityData.rainfall) {
+        cityData.rainfall[county].forEach(entry => {
+            rainfall_list.push({
+                county: county,
+                month: entry.month,
+                sum: entry.sum
+            });
+        });
+    }
+    for (var i = 1; i <= 12; i++) {
+        rainfall_list.push({
+            county: '全國',
+            month: '2023/' + (i < 10 ? '0' + i : i),
+            sum: country_rainfall['2023/' + (i < 10 ? '0' + i : i)]
+        });
+    }
+    console.log(rainfall_list);
+
+    function draw_barchart(selectedCountry){
+        var barXScale = d3.scaleBand()
+            .domain(rainfall_list.filter(d => d.county == selectedCountry).map(d => d.month))
+            .range([0, barWidth])
+            .padding(0.1);
+
+        var barYScale = d3.scaleLinear()
+            .domain([0, d3.max(rainfall_list.filter(d => d.county == selectedCountry), d => d.sum)])
+            .range([barHeight, 0]);
+
+        console.log(d3.max(rainfall_list.filter(d => d.county == selectedCountry), d => d.sum));
+
+        var barXAxis = d3.axisBottom(barXScale);
+        var barYAxis = d3.axisLeft(barYScale);
+
+        barSvg.append('g')
+            .attr('transform', `translate(${barMargin.left}, ${barHeight + barMargin.top})`)
+            .call(barXAxis);
+
+        barSvg.append('g')
+            .attr('transform', `translate(${barMargin.left}, ${barMargin.top})`)
+            .call(barYAxis);
+        
+        var bar = barSvg.selectAll('.rect').data(rainfall_list.filter(d => d.county == selectedCountry))
+            .enter()
+            .append('rect')
+            .attr('x', d => barXScale(d.month) + barMargin.left)
+            .attr('y', d => barYScale(d.sum) + barMargin.top)
+            .attr('width', barXScale.bandwidth())
+            .attr('height', d => barHeight - barYScale(d.sum))
+            .attr('fill', 'steelblue')
+            .on('mouseover', function () {
+                d3.select(this).attr('fill', 'orange');
+            })
+            .on('mouseout', function () {
+                d3.select(this).attr('fill', 'steelblue');
+            });
+    }
+
+    draw_barchart(d3.select(selectedCounty).data()[0].properties.NAME_2014);
+
+ 
+
 });
