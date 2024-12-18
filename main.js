@@ -85,9 +85,19 @@ var testData = [
     
 Promise.all([
     d3.json('taiwan.json'),
-    d3.csv('dataset/2023/rainfall.csv'),
+    d3.csv('dataset/2023/wind_direction_daily.csv'),
     d3.json('dataset/city_data.json')
-]).then(function([taiwanData, rainfallData, cityData]) {
+]).then(function([taiwanData, windir_data, cityData]) {
+    //preprocess windir_data
+    var windir_list_daily = [];
+    windir_data.forEach(d => {
+        var country = d.City;
+        var month = d.Date[5] + d.Date[6];
+        var wind_direction = d.Avg;
+        windir_list_daily.push({ country: country, month: month, wind_direction: wind_direction });
+    });
+    // console.log(windir_list_daily);
+
     //draw taiwan map
     var projection = d3.geoMercator()
                        .scale(10000)
@@ -110,7 +120,7 @@ Promise.all([
         .on('mouseover', function () {
             if(selectedCountry == this) return;
             d3.select(this).classed('country-hovered', true);
-            console.log(d3.select(this).data()[0].properties.NAME_2014);
+            // console.log(d3.select(this).data()[0].properties.NAME_2014);
             d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'orange');
         })
         .on('mouseout', function () {
@@ -122,7 +132,7 @@ Promise.all([
                 d3.select(selectedCountry).classed('country-selected', false);
                 d3.select(this).classed('country-hovered', true);
                 selectedCountry = null;
-                var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
+                var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
                 updateRadarChart(monthlyData);
                 updateInfo(selectedCountry, selectedMonth);
                 return;
@@ -131,7 +141,7 @@ Promise.all([
             selectedCountry = this;
             d3.select(this).classed('country-hovered', false).classed('country-selected', true);
 
-            var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
+            var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
             updateRadarChart(monthlyData);
 
             updateInfo(selectedCountry, selectedMonth);
@@ -170,9 +180,9 @@ Promise.all([
                     
                     updateMap(selectedMonth);
                     
-                    var monthlyData = processWindData(windir_list, selectedMonth, selectedCountry);
-                    console.log(selectedCountry);
-                    var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
+                    var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
+                    // console.log(selectedCountry);
+                    var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
                     updateRadarChart(monthlyData);
                     draw_barchart(selectedMonth < 10 ? '0' + selectedMonth : selectedMonth);
 
@@ -196,7 +206,7 @@ Promise.all([
             }
         }
 
-        console.log(rainfall_list);
+        // console.log(rainfall_list);
 
         var colorScale = d3.scaleSequential(d3.interpolateBlues)
         .domain([0, d3.max(rainfall_list, d => d.rainfall)])
@@ -215,12 +225,20 @@ Promise.all([
     updateMap(selectedMonth);
     
     //discretization
-    function processWindData(testData, selectedMonth, selectedCountry) {
-        var filteredData = testData.filter(d => d.month == selectedMonth);
+    function processWindData(data, selectedMonth, selectedCountry) {
+        // console.log(selectedMonth);
+
+        // console.log(data);
+        var filteredData = data.filter(d => d.month == selectedMonth);
+        // console.log(filteredData);
         if(selectedCountry) {
             countryName = d3.select(selectedCountry).data()[0].properties.NAME_2014;
+            // console.log(countryName);
+            // console.log(data.City)
             filteredData = filteredData.filter(d => d.country == countryName);
         }
+        // console.log(filteredData);
+
 
         var binSize = 360/16;
         var bins = d3.range(0, 360, binSize);
@@ -316,9 +334,9 @@ Promise.all([
             });
         }
     }
-    console.log(windir_list);
+    // console.log(windir_list);
 
-    var monthlyData = processWindData(windir_list, selectedMonth);
+    var monthlyData = processWindData(windir_list_daily, selectedMonth);
     updateRadarChart(monthlyData);
 
     function updateInfo(selectedCountry, selectedMonth) {
@@ -327,22 +345,28 @@ Promise.all([
         var countryName = selectedCountry ? d3.select(selectedCountry).data()[0].properties.NAME_2014 : '全國';
         var rainfallData, windData;
 
+        // console.log(cityData.rainfall);
+
         if(selectedCountry) {
-            rainfallData = testData.find(d => d.country == countryName && d.month == selectedMonth);
-            windData = testData.find(d => d.country === countryName && d.month == selectedMonth);
+            var str_month = selectedMonth < 10 ? '0' + selectedMonth : selectedMonth;
+            rainfallData = cityData.rainfall[str_month][countryName];
+            windData = windir_list.find(d => d.country === countryName && d.month == selectedMonth).wind_direction;
         } else {
             var filteredData = testData.filter(d => d.month == selectedMonth);
             var totalRainfall = d3.sum(filteredData, d => d.rainfall);
             var avgWindDirection = d3.mean(filteredData, d => d.wind_direction);
-            rainfallData = { rainfall: totalRainfall };
-            windData = { wind_direction: avgWindDirection };
+            rainfallData = totalRainfall;
+            windData = avgWindDirection
         }
+
+            console.log(windData);
+
 
         var infoData = [
             {Country: countryName},
             {Month: selectedMonth},
-            {Rainfall: rainfallData ? rainfallData.rainfall : 'N/A'},
-            {WindDirection: windData ? windData.wind_direction : 'N/A'}
+            {Rainfall: rainfallData ? rainfallData : 'N/A'},
+            {WindDirection: windData ? windData : 'N/A'}
         ];
 
         infoSvg.append('text')

@@ -65,7 +65,7 @@ def combine_data_by_city():
 
     with open('address.json', 'r', encoding='utf-8') as json_file:
         address = json.load(json_file)
-        address_dict = {site['sitename']: site['sitecity'] for site in address}
+        address_dict = {site['sitename']: site['sitecity'] if site['sitename'] is not np.nan else '新北市' for site in address}
 
         city_data = {'rainfall': {}, 'wind_speed': {}, 'wind_direction': {}}
 
@@ -113,40 +113,87 @@ def combine_data_by_city():
         with open('city_data.json', 'w', encoding='utf-8') as json_file:
             json.dump(city_data, json_file, ensure_ascii=False, indent=4)
 
+def daily_windir_avg():
+    file = load_data('2023/wind_direction.csv')
+    with open('address.json', 'r', encoding='utf-8') as json_file:
+        siteinfo = json.load(json_file)
+    siteinfo_dict = {site['sitename']: site['sitecity'] for site in siteinfo}
+    head = ["City", "Date", "Avg"]
+    df = pd.DataFrame(file)
+    df.replace({'#': np.nan, '': np.nan}, inplace=True)
+    output_directory = '2023'
+    df_wind_direction = df[df['測項'] == 'WIND_DIREC'].dropna(how='all')
+    df_wind_direction['Avg'] = df_wind_direction.iloc[:, 3:27].apply(pd.to_numeric, errors='coerce').mean(axis=1, skipna=True)
+    df_wind_direction = df_wind_direction[['測站', '日期', 'Avg']]
+    df_wind_direction['Date'] = df_wind_direction['日期'].apply(lambda x: x[:10])
+    df_wind_direction['City'] = df_wind_direction['測站'].map(siteinfo_dict)
+
+    df_wind_direction['Avg'] = pd.to_numeric(df_wind_direction['Avg'], errors='coerce')
+    df_wind_direction_grouped = df_wind_direction.groupby(['City', 'Date'])['Avg'].mean().reset_index()
+
+    output_wind_direction = os.path.join(output_directory, 'wind_direction_daily.csv')
+    with open(output_wind_direction, 'w', encoding='utf-8-sig') as f:
+        f.write(','.join(head) + '\n')
+    df_wind_direction_grouped.to_csv(output_wind_direction, mode='a', header=False, index=False, encoding='utf-8-sig')
+
+def daily_windspeed_avg():
+    file = load_data('2023/wind_speed.csv')
+    with open('address.json', 'r', encoding='utf-8') as json_file:
+        siteinfo = json.load(json_file)
+    siteinfo_dict = {site['sitename']: site['sitecity'] for site in siteinfo}
+    head = ["City", "Date", "Avg"]
+    df = pd.DataFrame(file)
+    df.replace({'#': np.nan, '': np.nan}, inplace=True)
+    output_directory = '2023'
+    df_wind_speed = df[df['測項'] == 'WIND_SPEED'].dropna(how='all')
+    df_wind_speed['Avg'] = df_wind_speed.iloc[:, 3:27].apply(pd.to_numeric, errors='coerce').mean(axis=1, skipna=True)
+    df_wind_speed = df_wind_speed[['測站', '日期', 'Avg']]
+    df_wind_speed['Date'] = df_wind_speed['日期'].apply(lambda x: x[:10])
+    df_wind_speed['City'] = df_wind_speed['測站'].map(siteinfo_dict)
+
+    df_wind_speed['Avg'] = pd.to_numeric(df_wind_speed['Avg'], errors='coerce')
+    df_wind_speed_grouped = df_wind_speed.groupby(['City', 'Date'])['Avg'].mean().reset_index()
+
+    output_wind_speed = os.path.join(output_directory, 'wind_speed_daily.csv')
+    with open(output_wind_speed, 'w', encoding='utf-8-sig') as f:
+        f.write(','.join(head) + '\n')
+    df_wind_speed_grouped.to_csv(output_wind_speed, mode='a', header=False, index=False, encoding='utf-8-sig')
 
 def main():
-    directory = '2023_raw'
-    for filename in os.listdir(directory):
-        if filename.endswith('.csv'):
-            file = load_data(os.path.join(directory, filename))
-            preprocess_data(file, filename)
+    # directory = '2023_raw'
+    # for filename in os.listdir(directory):
+    #     if filename.endswith('.csv'):
+    #         file = load_data(os.path.join(directory, filename))
+    #         preprocess_data(file, filename)
 
-    directory = '2023_by_site'
-    header = '測站,日期,測項,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,sum\n'
-    header_avg = '測站,日期,測項,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,avg\n'
-    output_directory = '2023'
-    output_rainfall = os.path.join(output_directory, 'rainfall.csv')
-    output_wind_speed = os.path.join(output_directory, 'wind_speed.csv')
-    output_wind_direction = os.path.join(output_directory, 'wind_direction.csv')
+    # directory = '2023_by_site'
+    # header = '測站,日期,測項,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,sum\n'
+    # header_avg = '測站,日期,測項,00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,avg\n'
+    # output_directory = '2023'
+    # output_rainfall = os.path.join(output_directory, 'rainfall.csv')
+    # output_wind_speed = os.path.join(output_directory, 'wind_speed.csv')
+    # output_wind_direction = os.path.join(output_directory, 'wind_direction.csv')
 
-    with open(output_rainfall, 'w', encoding='utf-8-sig') as f:
-        f.write(header)
+    # with open(output_rainfall, 'w', encoding='utf-8-sig') as f:
+    #     f.write(header)
 
-    with open(output_wind_speed, 'w', encoding='utf-8-sig') as f:
-        f.write(header_avg)
+    # with open(output_wind_speed, 'w', encoding='utf-8-sig') as f:
+    #     f.write(header_avg)
 
-    with open(output_wind_direction, 'w', encoding='utf-8-sig') as f:
-        f.write(header_avg)
-    for filename in os.listdir(directory):
-        if filename.endswith('.csv'):
-            file = load_data(os.path.join(directory, filename))
-            print(filename)
-            combine_data(file)
+    # with open(output_wind_direction, 'w', encoding='utf-8-sig') as f:
+    #     f.write(header_avg)
+    # for filename in os.listdir(directory):
+    #     if filename.endswith('.csv'):
+    #         file = load_data(os.path.join(directory, filename))
+    #         print(filename)
+    #         combine_data(file)
 
-    combine_data_by_city()
+    # combine_data_by_city()
 
     # site_to_city()
 
+    daily_windir_avg()
+    daily_windspeed_avg()
 
 if __name__ == '__main__':
     main()
