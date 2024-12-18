@@ -8,10 +8,15 @@ let barMargin = {top: 30, right: 30, bottom: 70, left: 50},
     barWidth = 1000 - barMargin.left - barMargin.right,
     barHeight = 500 - barMargin.top - barMargin.bottom;
 
-let radarLeft = 1500, radarTop = 0;
+let radarLeft = 1000, radarTop = 0;
 let radarMargin = {top: 30, right: 30, bottom: 30, left: 30},
     radarWidth = 500 - radarMargin.left - radarMargin.right,
     radarHeight = 400 - radarMargin.top - radarMargin.bottom;
+
+let infoLeft = 1500, infoTop = 0;
+let infoMargin = {top: 30, right: 30, bottom: 30, left: 30},
+    infoWidth = 500 - infoMargin.left - infoMargin.right,
+    infoHeight = 400 - infoMargin.top - infoMargin.bottom;
 
 let timeLeft = 200, timeTop = 850;
 let timeMargin = {top: 30, right: 30, bottom: 30, left: 30},
@@ -22,6 +27,14 @@ var svg = d3.select('svg');
 
 let mapSvg = svg.append('g')
     .attr('transform', `translate(${mapLeft}, ${mapTop})`);
+
+mapSvg.append('rect')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', mapWidth + mapMargin.left + mapMargin.right)
+    .attr('height', mapHeight + mapMargin.top + mapMargin.bottom)
+    .attr('fill', 'gray')
+    .attr('opacity', 0.3);
     
 let barSvg = svg.append('g')
     .attr('transform', `translate(${barLeft}, ${barTop})`);
@@ -31,6 +44,9 @@ let radarSvg = svg.append('g')
 
 let timeSvg = svg.append('g')
     .attr('transform', `translate(${timeLeft}, ${timeTop})`);
+
+let infoSvg = svg.append('g')
+    .attr('transform', `translate(${infoLeft}, ${infoTop})`);
 
 mapSvg.append('rect')
     .attr('x', 0)
@@ -57,26 +73,15 @@ radarSvg.append('rect')
     .attr('fill', 'none');
 
 var testData = [
-    { county: '臺北市', month: '1', rainfall: 120 },
-    { county: '臺北市', month: '2', rainfall: 80 },
-    { county: '新北市', month: '1', rainfall: 10 },
-    { county: '新北市', month: '2', rainfall: 280 },
-    { county: '臺南市', month: '1', rainfall: 200 },
-    { county: '臺南市', month: '2', rainfall: 150 },
-    { county: '臺中市', month: '1', rainfall: 320 },
-    { county: '臺中市', month: '2', rainfall: 50 }
+    { country: '臺北市', month: '1', rainfall: 120, wind_direction: 120 },
+    { country: '臺北市', month: '2', rainfall: 80, wind_direction: 80 },
+    { country: '新北市', month: '1', rainfall: 10, wind_direction: 110 },
+    { country: '新北市', month: '2', rainfall: 280, wind_direction: 70  },
+    { country: '臺南市', month: '1', rainfall: 200, wind_direction: 100 },
+    { country: '臺南市', month: '2', rainfall: 150, wind_direction: 50 },
+    { country: '臺中市', month: '1', rainfall: 320, wind_direction: 90 },
+    { country: '臺中市', month: '2', rainfall: 50, wind_direction: 50 }
 ];
-
-var testData2 = [
-    { county: '臺北市', month: '1', wind_direction: 120 },
-    { county: '臺北市', month: '2', wind_direction: 80 },
-    { county: '新北市', month: '1', wind_direction: 110 },
-    { county: '新北市', month: '2', wind_direction: 70 },
-    { county: '臺南市', month: '1', wind_direction: 100 },
-    { county: '臺南市', month: '2', wind_direction: 50 },
-    { county: '臺中市', month: '1', wind_direction: 90 },
-    { county: '臺中市', month: '2', wind_direction: 50 }
-]
     
 Promise.all([
     d3.json('taiwan.json'),
@@ -92,8 +97,8 @@ Promise.all([
     var geoGenerator = d3.geoPath()
                          .projection(projection);
 
-    //select county 
-    var selectedCounty = null;
+    //select country 
+    var selectedCountry = null;
 
     var country = mapSvg.selectAll('path')
         .data(taiwanData.features)
@@ -101,7 +106,7 @@ Promise.all([
         .append('path')
         .attr('stroke', 'black')
         .attr('d', geoGenerator)
-        .attr('class', 'county')
+        .attr('class', 'country')
         .on('mouseover', function () {
             if(selectedCounty == this) return;
             d3.select(this).classed('hovered', true);
@@ -113,20 +118,23 @@ Promise.all([
             d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
         })
         .on('click', function () {
-            if(selectedCounty == this) {
-                d3.select(selectedCounty).classed('selected', false);
-                d3.select(this).classed('hovered', true);
-                selectedCounty = null;
-                var monthlyData = processWindData(testData2, selectedMonth, selectedCounty);
+            if(selectedCountry == this) {
+                d3.select(selectedCountry).classed('country-selected', false);
+                d3.select(this).classed('country-hovered', true);
+                selectedCountry = null;
+                var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
                 updateRadarChart(monthlyData);
+                updateInfo(selectedCountry, selectedMonth);
                 return;
             }
-            d3.select(selectedCounty).classed('selected', false);
-            selectedCounty = this;
-            d3.select(this).classed('hovered', false).classed('selected', true);
+            d3.select(selectedCountry).classed('country-selected', false);
+            selectedCountry = this;
+            d3.select(this).classed('country-hovered', false).classed('country-selected', true);
 
-            var monthlyData = processWindData(testData2, selectedMonth, selectedCounty);
+            var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
             updateRadarChart(monthlyData);
+
+            updateInfo(selectedCountry, selectedMonth);
         });
     
     //select month
@@ -143,7 +151,7 @@ Promise.all([
         .attr('cx', timeXScale(selectedMonth))
         .attr('cy', 0)
         .attr('r', 10)
-        .attr('fill', 'steelblue')
+        .attr('fill', 'palegreen')
         .call(
             d3.drag()
                 .on('drag', function() {
@@ -164,8 +172,11 @@ Promise.all([
                     
                     var monthlyData = processWindData(windir_list, selectedMonth, selectedCounty);
                     console.log(selectedCounty);
+                    var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
                     updateRadarChart(monthlyData);
                     draw_barchart(selectedMonth < 10 ? '0' + selectedMonth : selectedMonth);
+
+                    updateInfo(selectedCountry, selectedMonth);
                 })
         );
 
@@ -178,7 +189,7 @@ Promise.all([
  
         var rainfallMap = {};
         selectedData.forEach(d => {
-            rainfallMap[d.county] = d.rainfall;
+            rainfallMap[d.country] = d.rainfall;
         });
     
         country.attr('fill', function (d) {
@@ -190,11 +201,11 @@ Promise.all([
     updateMap(selectedMonth);
     
     //discretization
-    function processWindData(testData2, selectedMonth, selectedCountry) {
-        var filteredData = testData2.filter(d => d.month == selectedMonth);
+    function processWindData(testData, selectedMonth, selectedCountry) {
+        var filteredData = testData.filter(d => d.month == selectedMonth);
         if(selectedCountry) {
-            countyName = d3.select(selectedCountry).data()[0].properties.NAME_2014;
-            filteredData = filteredData.filter(d => d.county == countyName);
+            countryName = d3.select(selectedCountry).data()[0].properties.NAME_2014;
+            filteredData = filteredData.filter(d => d.country == countryName);
         }
 
         var binSize = 360/16;
@@ -273,9 +284,9 @@ Promise.all([
             .transition()
             .duration(500)
             .attr('d', areaGenerator)
-            .attr('fill', 'steelblue')
-            .attr('fill-opacity', 0.5)
-            .attr('stroke', 'steelblue')
+            .attr('fill', 'orange')
+            .attr('fill-opacity', 0.7)
+            .attr('stroke', 'orange')
             .attr('stroke-width', 2);
     
         radarPath.exit().remove();
@@ -295,6 +306,97 @@ Promise.all([
 
     var monthlyData = processWindData(windir_list, selectedMonth);
     updateRadarChart(monthlyData);
+
+    function updateInfo(selectedCountry, selectedMonth) {
+        infoSvg.selectAll('*').remove();
+
+        var countryName = selectedCountry ? d3.select(selectedCountry).data()[0].properties.NAME_2014 : '全國';
+        var rainfallData, windData;
+
+        if(selectedCountry) {
+            rainfallData = testData.find(d => d.country == countryName && d.month == selectedMonth);
+            windData = testData.find(d => d.country === countryName && d.month == selectedMonth);
+        } else {
+            var filteredData = testData.filter(d => d.month == selectedMonth);
+            var totalRainfall = d3.sum(filteredData, d => d.rainfall);
+            var avgWindDirection = d3.mean(filteredData, d => d.wind_direction);
+            rainfallData = { rainfall: totalRainfall };
+            windData = { wind_direction: avgWindDirection };
+        }
+
+        var infoData = [
+            {Country: countryName},
+            {Month: selectedMonth},
+            {Rainfall: rainfallData ? rainfallData.rainfall : 'N/A'},
+            {WindDirection: windData ? windData.wind_direction : 'N/A'}
+        ];
+
+        infoSvg.append('text')
+            .attr('x', infoMargin.left)
+            .attr('y', infoMargin.top)
+            .text('Country')
+            .style('font-size', '30px')
+            .style('fill', 'lightcoral');
+
+        infoSvg.append('text')
+            .attr('x', infoMargin.left + 30)
+            .attr('y', infoMargin.top + 70)
+            .text(`${infoData[0].Country}`)
+            .transition()
+            .duration(500)
+            .style('font-size', '60px')
+            .style('fill', 'lightcoral');
+
+        infoSvg.append('text')
+            .attr('x', infoWidth/2 + 70)
+            .attr('y', infoMargin.top)
+            .text('Month')
+            .style('font-size', '30px')
+            .style('fill', 'palegreen');
+
+        infoSvg.append('text') 
+            .attr('x', infoWidth/2 + 100)
+            .attr('y', infoMargin.top + 70)
+            .text(`${infoData[1].Month}`)
+            .transition()
+            .duration(500)
+            .style('font-size', '60px')
+            .style('fill', 'palegreen');
+
+        infoSvg.append('text')
+            .attr('x', infoMargin.left)
+            .attr('y', infoHeight / 2)
+            .text('Rainfall')
+            .style('font-size', '30px')
+            .style('fill', 'steelblue');
+
+        infoSvg.append('text')
+            .attr('x', infoMargin.left + 200)
+            .attr('y', infoHeight / 2 + 50)
+            .text(infoData[2].Rainfall)
+            .transition()
+            .duration(500)
+            .style('font-size', '100px')
+            .style('fill', 'steelblue');
+
+        infoSvg.append('text')
+            .attr('x', infoMargin.left)
+            .attr('y', infoHeight - infoMargin.bottom)
+            .text('WindDirection')
+            .style('font-size', '30px')
+            .style('fill', 'orange');
+
+        infoSvg.append('text')
+            .attr('x', infoMargin.left + 200)
+            .attr('y', infoHeight - infoMargin.bottom + 50)
+            .text(infoData[3].WindDirection)
+            .transition()
+            .duration(500)
+            .style('font-size', '100px')
+            .style('fill', 'orange');
+    }
+
+    updateInfo(selectedCountry, selectedMonth);
 
     // draw bar chart
     var rainfall_list = [];
