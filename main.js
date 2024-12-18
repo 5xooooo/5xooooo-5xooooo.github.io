@@ -48,29 +48,29 @@ let timeSvg = svg.append('g')
 let infoSvg = svg.append('g')
     .attr('transform', `translate(${infoLeft}, ${infoTop})`);
 
-mapSvg.append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', mapWidth + mapMargin.left + mapMargin.right)
-    .attr('height', mapHeight + mapMargin.top + mapMargin.bottom)
-    .attr('stroke', 'black')
-    .attr('fill', 'none');
+// mapSvg.append('rect')
+//     .attr('x', 0)
+//     .attr('y', 0)
+//     .attr('width', mapWidth + mapMargin.left + mapMargin.right)
+//     .attr('height', mapHeight + mapMargin.top + mapMargin.bottom)
+//     .attr('stroke', 'black')
+//     .attr('fill', 'none');
 
-barSvg.append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', barWidth + barMargin.left + barMargin.right)
-    .attr('height', barHeight + barMargin.top + barMargin.bottom)
-    .attr('stroke', 'black')
-    .attr('fill', 'none');
+// barSvg.append('rect')
+//     .attr('x', 0)
+//     .attr('y', 0)
+//     .attr('width', barWidth + barMargin.left + barMargin.right)
+//     .attr('height', barHeight + barMargin.top + barMargin.bottom)
+//     .attr('stroke', 'black')
+//     .attr('fill', 'none');
 
-radarSvg.append('rect')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', radarWidth + radarMargin.left + radarMargin.right)
-    .attr('height', radarHeight + radarMargin.top + radarMargin.bottom)
-    .attr('stroke', 'black')
-    .attr('fill', 'none');
+// radarSvg.append('rect')
+//     .attr('x', 0)
+//     .attr('y', 0)
+//     .attr('width', radarWidth + radarMargin.left + radarMargin.right)
+//     .attr('height', radarHeight + radarMargin.top + radarMargin.bottom)
+//     .attr('stroke', 'black')
+//     .attr('fill', 'none');
 
 var testData = [
     { country: '臺北市', month: '1', rainfall: 120, wind_direction: 120 },
@@ -121,18 +121,18 @@ Promise.all([
             if(selectedCountry == this) return;
             d3.select(this).classed('country-hovered', true);
             // console.log(d3.select(this).data()[0].properties.NAME_2014);
-            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'orange');
+            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).classed('country-hovered', true);
         })
         .on('mouseout', function () {
             d3.select(this).classed('country-hovered', false);
-            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
+            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).classed('country-hovered', false);
         })
         .on('click', function () {
             if(selectedCountry == this) {
                 d3.select(selectedCountry).classed('country-selected', false);
-                d3.select('.' + d3.select(selectedCountry).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
+                d3.select('.' + d3.select(selectedCountry).data()[0].properties.NAME_2014).classed('country-selected', false)
                 d3.select(this).classed('country-hovered', true);
-                d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightpink');
+                d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).classed('country-hovered', true);
                 selectedCountry = null;
                 var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
                 updateRadarChart(monthlyData);
@@ -141,11 +141,11 @@ Promise.all([
             }
             if(selectedCountry) {
                 d3.select(selectedCountry).classed('country-selected', false);
-                d3.select('.' + d3.select(selectedCountry).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
+                d3.select('.' + d3.select(selectedCountry).data()[0].properties.NAME_2014).classed('country-selected', false)
             }
             selectedCountry = this;
             d3.select(this).classed('country-hovered', false).classed('country-selected', true);
-            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightcoral');
+            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).classed('country-hovered', false).classed('country-selected', true)
 
             var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
             updateRadarChart(monthlyData);
@@ -219,10 +219,8 @@ Promise.all([
             }
         }
 
-        // console.log(rainfall_list);
-
         var colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-        .domain([0, d3.max(rainfall_list, d => d.rainfall)])
+            .domain([0, d3.max(rainfall_list, d => d.rainfall)]);
 
         var colorBarWidth = 20;
         var colorBarHeight = 300;
@@ -234,7 +232,10 @@ Promise.all([
         var colorBarAxis = d3.axisLeft(colorBarScale)
             .ticks(5);
 
+        svg.selectAll('.color-bar').remove(); // Reset the color bar
+
         var colorBar = svg.append('g')
+            .attr('class', 'color-bar')
             .attr('transform', `translate(${mapLeft + mapMargin.left - 30}, ${mapTop + mapHeight - colorBarHeight})`);
 
         colorBar.selectAll('rect')
@@ -258,12 +259,12 @@ Promise.all([
             .style('font-size', '14px')
             .style('fill', 'white')
             .text('precipitation(mm)');
- 
+
         var rainfallMap = {};
         rainfall_list.forEach(d => {
             rainfallMap[d.country] = d.rainfall;
         });
-    
+
         country.attr('fill', function (d) {
             var rainfall = rainfallMap[d.properties.NAME_2014] || 0;
             return colorScale(rainfall);
@@ -304,6 +305,7 @@ Promise.all([
             d.frequency = total > 0 ? d.frequency / total : 0;
         });
 
+        // console.log(binCounts);
         return binCounts;
     }
 
@@ -353,7 +355,7 @@ Promise.all([
     function updateRadarChart(data) {
         var areaGenerator = d3.lineRadial()
             .angle(d => angleScale(d.angle))
-            .radius(d => radiusScale(d.frequency))
+            .radius(d => radiusScale(d.frequency) * 1.5)
             .curve(d3.curveCardinalClosed);
     
         var radarPath = radarSvg.selectAll('.radar-area').data([data]);
@@ -395,28 +397,30 @@ Promise.all([
         var countryName = selectedCountry ? d3.select(selectedCountry).data()[0].properties.NAME_2014 : '全國';
         var rainfallData, windData;
 
-        // console.log(cityData.rainfall);
+        windData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
+        let maxFreqAngle = windData.find(d => d.frequency === d3.max(windData, d => d.frequency)).angle;
+        let dir = directionLabels[Math.floor(maxFreqAngle / 22.5)];
+        console.log(dir);
 
+        var str_month = selectedMonth < 10 ? '0' + selectedMonth : selectedMonth;
         if(selectedCountry) {
-            var str_month = selectedMonth < 10 ? '0' + selectedMonth : selectedMonth;
             rainfallData = cityData.rainfall[str_month][countryName];
-            windData = windir_list.find(d => d.country === countryName && d.month == selectedMonth).wind_direction;
         } else {
-            var filteredData = testData.filter(d => d.month == selectedMonth);
-            var totalRainfall = d3.sum(filteredData, d => d.rainfall);
-            var avgWindDirection = d3.mean(filteredData, d => d.wind_direction);
+            var filteredData = cityData.rainfall[str_month];
+            var totalRainfall = 0;
+            for (var city in filteredData) {
+                totalRainfall += filteredData[city];
+            }
+            console.log(totalRainfall);
             rainfallData = totalRainfall;
-            windData = avgWindDirection
         }
-
-            console.log(windData);
 
 
         var infoData = [
             {Country: countryName},
             {Month: selectedMonth},
-            {Rainfall: rainfallData ? rainfallData : 'N/A'},
-            {WindDirection: windData ? windData : 'N/A'}
+            {Rainfall: rainfallData ? rainfallData.toFixed(1) : 'N/A'},
+            {WindDirection: dir ? dir : 'N/A'}
         ];
 
         infoSvg.append('text')
@@ -459,7 +463,7 @@ Promise.all([
             .style('fill', 'steelblue');
 
         infoSvg.append('text')
-            .attr('x', infoMargin.left + 200)
+            .attr('x', infoMargin.left + 150)
             .attr('y', infoHeight / 2 + 50)
             .text(infoData[2].Rainfall)
             .transition()

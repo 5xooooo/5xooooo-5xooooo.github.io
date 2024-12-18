@@ -15,7 +15,8 @@ def site_to_city():
         address[row['sitename']] = row['sitename']
         address[row['sitename']] = str(row['siteaddress'])[:3]
 
-    address_list = [{'sitename': row['sitename'], 'sitecity': str(row['siteaddress'])[:3]} for index, row in df.iterrows()]
+    address_list = [{'sitename': row['sitename'], 'sitecity': '花蓮縣' if str(row['siteaddress'])[:3] == '花蓮市' else str(row['siteaddress'])[:3] if pd.notna(row['siteaddress']) else '新北市'} for index, row in df.iterrows()]
+    # print(address_list)
     with open('address.json', 'w', encoding='utf-8') as json_file:
         json.dump(address_list, json_file, ensure_ascii=False, indent=4)
 
@@ -71,7 +72,7 @@ def combine_data_by_city():
 
     with open('address.json', 'r', encoding='utf-8') as json_file:
         address = json.load(json_file)
-        address_dict = {site['sitename']: site['sitecity'] if site['sitename'] is not np.nan else '新北市' for site in address}
+        address_dict = {site['sitename']: site['sitecity'] for site in address}
 
         city_data = {'rainfall': {}, 'wind_speed': {}, 'wind_direction': {}}
 
@@ -88,7 +89,8 @@ def combine_data_by_city():
 
         for month in city_data['rainfall']:
             for city in city_data['rainfall'][month]:
-                city_data['rainfall'][month][city] /= site_count[city]
+                if city != '花蓮縣':
+                    city_data['rainfall'][month][city] /= site_count[city]
 
         for _, row in df_wind_speed.iterrows():
             city = address_dict.get(row['測站'], 'Unknown')
@@ -189,7 +191,7 @@ def main():
     for filename in os.listdir(directory):
         if filename.endswith('.csv'):
             file = load_data(os.path.join(directory, filename))
-            print(filename)
+            # print(filename)
             combine_data(file)
 
     combine_data_by_city()
