@@ -110,7 +110,6 @@ Promise.all([
         .on('mouseover', function () {
             if(selectedCountry == this) return;
             d3.select(this).classed('country-hovered', true);
-            console.log(d3.select(this).data()[0].properties.NAME_2014);
             d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightpink');
         })
         .on('mouseout', function () {
@@ -120,6 +119,7 @@ Promise.all([
         .on('click', function () {
             if(selectedCountry == this) {
                 d3.select(selectedCountry).classed('country-selected', false);
+                d3.select('.' + d3.select(selectedCountry).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
                 d3.select(this).classed('country-hovered', true);
                 d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightpink');
                 selectedCountry = null;
@@ -128,8 +128,10 @@ Promise.all([
                 updateInfo(selectedCountry, selectedMonth);
                 return;
             }
-            d3.select(selectedCountry).classed('country-selected', false);
-            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
+            if(selectedCountry) {
+                d3.select(selectedCountry).classed('country-selected', false);
+                d3.select('.' + d3.select(selectedCountry).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
+            }
             selectedCountry = this;
             d3.select(this).classed('country-hovered', false).classed('country-selected', true);
             d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightcoral');
@@ -149,6 +151,13 @@ Promise.all([
         .range([0, timeMargin.left + timeWidth + timeMargin.right]);
     var timeXAxis = d3.axisBottom(timeXScale).tickSize(10);
     timeSvg.call(timeXAxis);
+
+    timeSvg.append('text')
+        .attr('x', -50)
+        .attr('y', 7)
+        .text('Month')
+        .style('font-size', '16px')
+        .style('fill', 'white');
 
     var dragCircle = timeSvg.append('circle')
         .attr('cx', timeXScale(selectedMonth))
@@ -201,8 +210,43 @@ Promise.all([
 
         console.log(rainfall_list);
 
-        var colorScale = d3.scaleSequential(d3.interpolateBlues)
+        var colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
         .domain([0, d3.max(rainfall_list, d => d.rainfall)])
+
+        var colorBarWidth = 20;
+        var colorBarHeight = 300;
+
+        var colorBarScale = d3.scaleLinear()
+            .domain([0, d3.max(rainfall_list, d => d.rainfall)])
+            .range([colorBarHeight, 0]);
+
+        var colorBarAxis = d3.axisLeft(colorBarScale)
+            .ticks(5);
+
+        var colorBar = svg.append('g')
+            .attr('transform', `translate(${mapLeft + mapMargin.left - 30}, ${mapTop + mapHeight - colorBarHeight})`);
+
+        colorBar.selectAll('rect')
+            .data(d3.range(0, colorBarHeight))
+            .enter()
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', d => d)
+            .attr('width', colorBarWidth)
+            .attr('height', 1)
+            .attr('fill', d => colorScale(colorBarScale.invert(d)));
+
+        colorBar.append('g')
+            .attr('transform', `translate(0, 0)`)
+            .call(colorBarAxis);
+
+        colorBar.append('text')
+            .attr('x', -40)
+            .attr('y', -20)
+            .attr('text-anchor', 'start')
+            .style('font-size', '14px')
+            .style('fill', 'white')
+            .text('precipitation(mm)');
  
         var rainfallMap = {};
         rainfall_list.forEach(d => {
@@ -273,6 +317,8 @@ Promise.all([
         .style("stroke", "#aaa");
 
     var directions = d3.range(0, 360, 360/16);
+    var directionLabels = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+
     radarSvg.selectAll('.radar-label')
         .data(directions)
         .enter()
@@ -282,7 +328,7 @@ Promise.all([
         .attr('x', d => radiusScale(1.1) * Math.cos(angleScale(d) - Math.PI / 2))
         .attr('y', d => radiusScale(1.1) * Math.sin(angleScale(d) - Math.PI / 2))
         .attr('text-anchor', 'middle')
-        .text(d => `${d}°`);
+        .text((d, i) => directionLabels[i]);
 
     //update radar chart
     function updateRadarChart(data) {
