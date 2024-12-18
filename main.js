@@ -108,13 +108,13 @@ Promise.all([
         .attr('d', geoGenerator)
         .attr('class', 'country')
         .on('mouseover', function () {
-            if(selectedCounty == this) return;
-            d3.select(this).classed('hovered', true);
+            if(selectedCountry == this) return;
+            d3.select(this).classed('country-hovered', true);
             console.log(d3.select(this).data()[0].properties.NAME_2014);
             d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'orange');
         })
         .on('mouseout', function () {
-            d3.select(this).classed('hovered', false);
+            d3.select(this).classed('country-hovered', false);
             d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
         })
         .on('click', function () {
@@ -170,8 +170,8 @@ Promise.all([
                     
                     updateMap(selectedMonth);
                     
-                    var monthlyData = processWindData(windir_list, selectedMonth, selectedCounty);
-                    console.log(selectedCounty);
+                    var monthlyData = processWindData(windir_list, selectedMonth, selectedCountry);
+                    console.log(selectedCountry);
                     var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
                     updateRadarChart(monthlyData);
                     draw_barchart(selectedMonth < 10 ? '0' + selectedMonth : selectedMonth);
@@ -294,11 +294,11 @@ Promise.all([
     
     var windir_list = [];
     for (var month in cityData.wind_direction) {
-        for (var county in cityData.wind_direction[month]) {
+        for (var country_ in cityData.wind_direction[month]) {
             windir_list.push({
-                county: county,
+                country: country_,
                 month: month,
-                wind_direction: cityData.wind_direction[month][county]
+                wind_direction: cityData.wind_direction[month][country_]
             });
         }
     }
