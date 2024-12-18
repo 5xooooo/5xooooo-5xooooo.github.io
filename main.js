@@ -181,14 +181,28 @@ Promise.all([
         );
 
     //update taiwan map
-    var colorScale = d3.scaleSequential(d3.interpolateBlues)
-        .domain([0, d3.max(testData, d => d.rainfall)])
 
     function updateMap(selectedMonth) {
-        var selectedData = testData.filter(d => d.month == selectedMonth);
+        var str_month = selectedMonth < 10 ? '0' + selectedMonth : selectedMonth;
+        rainfall_list = [];
+        for (var country_ in cityData.rainfall[str_month]) {
+            var city = country_;
+            var sum = cityData.rainfall[str_month][country_];
+            var existing = rainfall_list.find(d => d.city === city);
+            if (existing) {
+                existing.sum += sum;
+            } else {
+                rainfall_list.push({ country: city, rainfall: sum });
+            }
+        }
+
+        console.log(rainfall_list);
+
+        var colorScale = d3.scaleSequential(d3.interpolateBlues)
+        .domain([0, d3.max(rainfall_list, d => d.rainfall)])
  
         var rainfallMap = {};
-        selectedData.forEach(d => {
+        rainfall_list.forEach(d => {
             rainfallMap[d.country] = d.rainfall;
         });
     
@@ -399,20 +413,6 @@ Promise.all([
     updateInfo(selectedCountry, selectedMonth);
 
     // draw bar chart
-    var rainfall_list = [];
-    for (var month in cityData.rainfall) {
-        for (var country_ in cityData.rainfall[month]) {
-            var city = country_;
-            var sum = cityData.rainfall[month][country_];
-            var existing = rainfall_list.find(d => d.city === city);
-            if (existing) {
-                existing.sum += sum;
-            } else {
-                rainfall_list.push({ city: city, sum: sum });
-            }
-        }
-    }
-    console.log(rainfall_list);
 
     function draw_barchart(month=0) {
         if (month != 0) {
