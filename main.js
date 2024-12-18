@@ -32,7 +32,7 @@ mapSvg.append('rect')
     .attr('x', 0)
     .attr('y', 0)
     .attr('width', mapWidth + mapMargin.left + mapMargin.right)
-    .attr('height', mapHeight + mapMargin.top + mapMargin.bottom)
+    .attr('height', mapHeight + mapMargin.top + mapMargin.bottom + 150)
     .attr('fill', 'gray')
     .attr('opacity', 0.3);
     
@@ -47,30 +47,6 @@ let timeSvg = svg.append('g')
 
 let infoSvg = svg.append('g')
     .attr('transform', `translate(${infoLeft}, ${infoTop})`);
-
-// mapSvg.append('rect')
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', mapWidth + mapMargin.left + mapMargin.right)
-//     .attr('height', mapHeight + mapMargin.top + mapMargin.bottom)
-//     .attr('stroke', 'black')
-//     .attr('fill', 'none');
-
-// barSvg.append('rect')
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', barWidth + barMargin.left + barMargin.right)
-//     .attr('height', barHeight + barMargin.top + barMargin.bottom)
-//     .attr('stroke', 'black')
-//     .attr('fill', 'none');
-
-// radarSvg.append('rect')
-//     .attr('x', 0)
-//     .attr('y', 0)
-//     .attr('width', radarWidth + radarMargin.left + radarMargin.right)
-//     .attr('height', radarHeight + radarMargin.top + radarMargin.bottom)
-//     .attr('stroke', 'black')
-//     .attr('fill', 'none');
 
 var testData = [
     { country: '臺北市', month: '1', rainfall: 120, wind_direction: 120 },
@@ -96,7 +72,6 @@ Promise.all([
         var wind_direction = d.Avg;
         windir_list_daily.push({ country: country, month: month, wind_direction: wind_direction });
     });
-    // console.log(windir_list_daily);
 
     //draw taiwan map
     var projection = d3.geoMercator()
@@ -194,7 +169,6 @@ Promise.all([
                     updateMap(selectedMonth);
                     
                     var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
-                    // console.log(selectedCountry);
                     var monthlyData = processWindData(windir_list_daily, selectedMonth, selectedCountry);
                     updateRadarChart(monthlyData);
                     draw_barchart(selectedMonth < 10 ? '0' + selectedMonth : selectedMonth);
@@ -275,19 +249,12 @@ Promise.all([
     
     //discretization
     function processWindData(data, selectedMonth, selectedCountry) {
-        // console.log(selectedMonth);
 
-        // console.log(data);
         var filteredData = data.filter(d => d.month == selectedMonth);
-        // console.log(filteredData);
         if(selectedCountry) {
             countryName = d3.select(selectedCountry).data()[0].properties.NAME_2014;
-            // console.log(countryName);
-            // console.log(data.City)
             filteredData = filteredData.filter(d => d.country == countryName);
         }
-        // console.log(filteredData);
-
 
         var binSize = 360/16;
         var bins = d3.range(0, 360, binSize);
@@ -305,7 +272,6 @@ Promise.all([
             d.frequency = total > 0 ? d.frequency / total : 0;
         });
 
-        // console.log(binCounts);
         return binCounts;
     }
 
@@ -386,7 +352,6 @@ Promise.all([
             });
         }
     }
-    // console.log(windir_list);
 
     var monthlyData = processWindData(windir_list_daily, selectedMonth);
     updateRadarChart(monthlyData);
@@ -491,7 +456,6 @@ Promise.all([
     updateInfo(selectedCountry, selectedMonth);
 
     // draw bar chart
-
     function draw_barchart(month=0) {
         if (month != 0) {
             rainfall_list = [];
@@ -551,12 +515,6 @@ Promise.all([
             .attr('width', barXScale.bandwidth())
             .attr('height', 0)
             .attr('fill', 'steelblue')
-            // .on('mouseover', function () {
-            //     d3.select(this).attr('fill', 'orange');
-            // })
-            // .on('mouseout', function () {
-            //     d3.select(this).attr('fill', 'steelblue');
-            // })
             .merge(bar)
             .transition()
             .duration(1000)
@@ -568,7 +526,5 @@ Promise.all([
     }
 
     draw_barchart('01');
-
- 
 
 });
