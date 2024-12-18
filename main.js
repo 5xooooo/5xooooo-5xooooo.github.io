@@ -111,7 +111,7 @@ Promise.all([
             if(selectedCountry == this) return;
             d3.select(this).classed('country-hovered', true);
             console.log(d3.select(this).data()[0].properties.NAME_2014);
-            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'orange');
+            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightpink');
         })
         .on('mouseout', function () {
             d3.select(this).classed('country-hovered', false);
@@ -121,6 +121,7 @@ Promise.all([
             if(selectedCountry == this) {
                 d3.select(selectedCountry).classed('country-selected', false);
                 d3.select(this).classed('country-hovered', true);
+                d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightpink');
                 selectedCountry = null;
                 var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
                 updateRadarChart(monthlyData);
@@ -128,8 +129,10 @@ Promise.all([
                 return;
             }
             d3.select(selectedCountry).classed('country-selected', false);
+            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'steelblue');
             selectedCountry = this;
             d3.select(this).classed('country-hovered', false).classed('country-selected', true);
+            d3.select('.' + d3.select(this).data()[0].properties.NAME_2014).attr('fill', 'lightcoral');
 
             var monthlyData = processWindData(testData, selectedMonth, selectedCountry);
             updateRadarChart(monthlyData);
@@ -473,12 +476,12 @@ Promise.all([
             .attr('width', barXScale.bandwidth())
             .attr('height', 0)
             .attr('fill', 'steelblue')
-            .on('mouseover', function () {
-                d3.select(this).attr('fill', 'orange');
-            })
-            .on('mouseout', function () {
-                d3.select(this).attr('fill', 'steelblue');
-            })
+            // .on('mouseover', function () {
+            //     d3.select(this).attr('fill', 'orange');
+            // })
+            // .on('mouseout', function () {
+            //     d3.select(this).attr('fill', 'steelblue');
+            // })
             .merge(bar)
             .transition()
             .duration(1000)
