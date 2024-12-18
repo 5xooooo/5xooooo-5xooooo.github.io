@@ -73,46 +73,42 @@ def combine_data_by_city():
             city = address_dict.get(row['測站'], 'Unknown')
             if(city == '221'):
                 city = '新北市'
-            month = row['日期'][:7]  # Extract the month from the date
-            if city not in city_data['rainfall']:
-                city_data['rainfall'][city] = []
-            entry = next((item for item in city_data['rainfall'][city] if item['month'] == month), None)
-            if not entry:
-                entry = {'month': month, 'sum': 0}
-                city_data['rainfall'][city].append(entry)
-            entry['sum'] += row['sum'] if not pd.isna(row['sum']) else 0
+            month = row['日期'][5:7]  # Extract the month from the date
+            if month not in city_data['rainfall']:
+                city_data['rainfall'][month] = {}
+            if city not in city_data['rainfall'][month]:
+                city_data['rainfall'][month][city] = 0
+            city_data['rainfall'][month][city] += row['sum'] if not pd.isna(row['sum']) else 0
 
         for _, row in df_wind_speed.iterrows():
             city = address_dict.get(row['測站'], 'Unknown')
-            month = row['日期'][:7]  # Extract the month from the date
-            if city not in city_data['wind_speed']:
-                city_data['wind_speed'][city] = []
-            entry = next((item for item in city_data['wind_speed'][city] if item['month'] == month), None)
-            if not entry:
-                entry = {'month': month, 'avg': 0}
-                city_data['wind_speed'][city].append(entry)
-            entry['avg'] += row['avg'] if not pd.isna(row['avg']) else 0
+            month = row['日期'][5:7]  # Extract the month from the date
+            if month not in city_data['wind_speed']:
+                city_data['wind_speed'][month] = {}
+            if city not in city_data['wind_speed'][month]:
+                city_data['wind_speed'][month][city] = {'total': 0, 'count': 0}
+            city_data['wind_speed'][month][city]['total'] += row['avg'] if not pd.isna(row['avg']) else 0
+            city_data['wind_speed'][month][city]['count'] += 1
 
         for _, row in df_wind_direction.iterrows():
             city = address_dict.get(row['測站'], 'Unknown')
-            month = row['日期'][:7]  # Extract the month from the date
-            if city not in city_data['wind_direction']:
-                city_data['wind_direction'][city] = []
-            entry = next((item for item in city_data['wind_direction'][city] if item['month'] == month), None)
-            if not entry:
-                entry = {'month': month, 'avg': 0}
-                city_data['wind_direction'][city].append(entry)
-            entry['avg'] += row['avg'] if not pd.isna(row['avg']) else 0
+            month = row['日期'][5:7]  # Extract the month from the date
+            if month not in city_data['wind_direction']:
+                city_data['wind_direction'][month] = {}
+            if city not in city_data['wind_direction'][month]:
+                city_data['wind_direction'][month][city] = {'total': 0, 'count': 0}
+            city_data['wind_direction'][month][city]['total'] += row['avg'] if not pd.isna(row['avg']) else 0
+            city_data['wind_direction'][month][city]['count'] += 1
 
-        for city in city_data['wind_speed']:
-            for entry in city_data['wind_speed'][city]:
-                if entry['avg'] > 0:
-                    entry['avg'] /= df_wind_speed[df_wind_speed['日期'].str.startswith(entry['month']) & (df_wind_speed['測站'].map(address_dict) == city)].shape[0]
+        for month in city_data['wind_speed']:
+            for city in city_data['wind_speed'][month]:
+                if city_data['wind_speed'][month][city]['count'] > 0:
+                    city_data['wind_speed'][month][city] = city_data['wind_speed'][month][city]['total'] / city_data['wind_speed'][month][city]['count']
 
-        for city in city_data['wind_direction']:
-            for entry in city_data['wind_direction'][city]:
-                if entry['avg'] > 0:
-                    entry['avg'] /= df_wind_direction[df_wind_direction['日期'].str.startswith(entry['month']) & (df_wind_direction['測站'].map(address_dict) == city)].shape[0]
+        for month in city_data['wind_direction']:
+            for city in city_data['wind_direction'][month]:
+                if city_data['wind_direction'][month][city]['count'] > 0:
+                    city_data['wind_direction'][month][city] = city_data['wind_direction'][month][city]['total'] / city_data['wind_direction'][month][city]['count']
 
         with open('city_data.json', 'w', encoding='utf-8') as json_file:
             json.dump(city_data, json_file, ensure_ascii=False, indent=4)
