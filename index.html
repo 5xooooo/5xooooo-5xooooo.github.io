@@ -15,15 +15,18 @@
 		  border-radius: 4px;
 		  font-size: 12px;
 		}
+		body {
+			background-color: #141414;
+			color: white;
+		}
 		.county {
 			/* fill: steelblue; */
 		}
-		.county.hovered {
-			fill: red;
-			opacity: 0.5;
+		.country-hovered {
+			fill: lightpink;
 		}
-		.county.selected {
-			fill: red;
+		.country-selected {
+			fill: lightcoral;
 		}
 		.grid {
 			fill: none;
@@ -34,11 +37,14 @@
 			stroke-dasharray: 2, 4;
 		}
 		.radar-label {
-			fill: #666;
+			fill: #ccc;
 		}
 	</style>
 	<svg width="2000" height="1000">
 	</svg>
+	<style>
+		
+	</style>
 	<button id="sortButton">sort</button>
 
 	<script src="https://d3js.org/d3.v5.min.js"></script>
